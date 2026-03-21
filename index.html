@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>חדשות ישראל</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            text-align: center; 
+            padding: 20px; 
+            background-color: var(--tg-theme-bg-color, #ffffff); 
+            color: var(--tg-theme-text-color, #000000); 
+        }
+        .container { display: flex; flex-direction: column; gap: 15px; margin-top: 20px; }
+        button { 
+            width: 100%; 
+            padding: 15px; 
+            font-size: 18px; 
+            font-weight: bold;
+            cursor: pointer; 
+            background: var(--tg-theme-button-color, #248bed); 
+            color: var(--tg-theme-button-text-color, #ffffff); 
+            border: none; 
+            border-radius: 12px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            -webkit-tap-highlight-color: transparent; /* מונע הבהוב באייפון */
+        }
+        button:active { opacity: 0.8; transform: scale(0.98); }
+        h3 { margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <h3>בחר תחום עניין לקבלת עדכונים:</h3>
+    <div class="container">
+        <button onclick="sendCategory('חדשות')">📰 חדשות כללי</button>
+        <button onclick="sendCategory('כלכלה')">💰 כלכלה</button>
+        <button onclick="sendCategory('ספורט')">⚽ ספורט</button>
+        <button onclick="sendCategory('תרבות')">🎭 תרבות ובידור</button>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.ready(); // מודיע לטלגרם שהאפליקציה מוכנה
+        tg.expand(); // פותח למסך מלא
+
+        function sendCategory(cat) {
+            try {
+                // שליחת הנתונים חזרה לבוט
+                tg.sendData(cat);
+            } catch (e) {
+                console.error("Error sending data:", e);
+            }
+        }
+    </script>
+</body>
+</html>
