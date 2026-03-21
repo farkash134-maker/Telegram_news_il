@@ -1,58 +1,99 @@
-<!DOCTYPE html>
-<html lang="he" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>חדשות ישראל</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-            text-align: center; 
-            padding: 20px; 
-            background-color: var(--tg-theme-bg-color, #ffffff); 
-            color: var(--tg-theme-text-color, #000000); 
-        }
-        .container { display: flex; flex-direction: column; gap: 15px; margin-top: 20px; }
-        button { 
-            width: 100%; 
-            padding: 15px; 
-            font-size: 18px; 
-            font-weight: bold;
-            cursor: pointer; 
-            background: var(--tg-theme-button-color, #248bed); 
-            color: var(--tg-theme-button-text-color, #ffffff); 
-            border: none; 
-            border-radius: 12px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            -webkit-tap-highlight-color: transparent; /* מונע הבהוב באייפון */
-        }
-        button:active { opacity: 0.8; transform: scale(0.98); }
-        h3 { margin-bottom: 10px; }
-    </style>
-</head>
-<body>
-    <h3>בחר תחום עניין לקבלת עדכונים:</h3>
-    <div class="container">
-        <button onclick="sendCategory('חדשות')">📰 חדשות כללי</button>
-        <button onclick="sendCategory('כלכלה')">💰 כלכלה</button>
-        <button onclick="sendCategory('ספורט')">⚽ ספורט</button>
-        <button onclick="sendCategory('תרבות')">🎭 תרבות ובידור</button>
-    </div>
+import logging
+import feedparser
+from bs4 import BeautifulSoup # לניקוי הטקסט של התקציר
+from telegram import Update, WebAppInfo, KeyboardButton, ReplyKeyboardMarkup
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
-    <script>
-        const tg = window.Telegram.WebApp;
-        tg.ready(); // מודיע לטלגרם שהאפליקציה מוכנה
-        tg.expand(); // פותח למסך מלא
+# הגדרת לוגים - חשוב כדי לראות ב-Render אם הנתונים מגיעים
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
-        function sendCategory(cat) {
-            try {
-                // שליחת הנתונים חזרה לבוט
-                tg.sendData(cat);
-            } catch (e) {
-                console.error("Error sending data:", e);
-            }
-        }
-    </script>
-</body>
-</html>
+# --- הגדרות ---
+TOKEN = "כאן_הטוקן_שלך"
+# וודא שהלינק מסתיים בלוכסן /
+WEB_APP_URL = "https://your-username.github.io/your-repo/" 
+
+# מקורות החדשות (RSS של מעריב - עובד מצוין עם עברית)
+RSS_FEEDS = {
+    "חדשות": "https://www.maariv.co.il/rss/rsschadashot",
+    "כלכלה": "https://www.maariv.co.il/rss/rssfeedsasakim",
+    "ספורט": "https://www.maariv.co.il/rss/rssfeedssport",
+    "תרבות": "https://www.maariv.co.il/rss/rssfeedstarbot"
+}
+
+def clean_html(html_text):
+    """מנקה תגיות HTML מהתקציר של ה-RSS"""
+    if not html_text:
+        return ""
+    soup = BeautifulSoup(html_text, "html.parser")
+    return soup.get_text()
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """שליחת כפתור המקלדת שפותח את האפליקציה"""
+    # יצירת כפתור "תפריט" בתחתית המקלדת - הדרך היחידה ש-tg.sendData עובד באייפון
+    web_app = WebAppInfo(url=WEB_APP_URL)
+    kb = [[KeyboardButton("📰 בחר קטגוריית חדשות", web_app=web_app)]]
+    
+    reply_markup = ReplyKeyboardMarkup(kb, resize_keyboard=True)
+    
+    await update.message.reply_text(
+        "שלום! לחץ על הכפתור למטה כדי לפתוח את תפריט החדשות ולבחור נושא:",
+        reply_markup=reply_markup
+    )
+
+async def handle_webapp_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """פונקציה זו רצה כשהמשתמש לוחץ על כפתור בתוך ה-HTML"""
+    # הנתון שנשלח מה-JS (למשל "ספורט")
+    category = update.effective_message.web_app_data.data
+    logging.info(f"משתמש ביקש קטגוריה: {category}")
+    
+    feed_url = RSS_FEEDS.get(category)
+    
+    if not feed_url:
+        await update.message.reply_text("מצטער, לא הצלחתי למצוא את הקטגוריה הזו.")
+        return
+
+    # הודעת ביניים כדי שהמשתמש ידע שזה עובד
+    status_msg = await update.message.reply_text(f"מעדכן חדשות בנושא {category}... ⏳")
+
+    try:
+        # משיכת הנתונים מהאתר
+        feed = feedparser.parse(feed_url)
+        
+        if not feed.entries:
+            await status_msg.edit_text("לא נמצאו כותרות חדשות כרגע.")
+            return
+
+        response = f"🗞️ **תקציר חדשות: {category}**\n"
+        response += "------------------------------\n\n"
+
+        # לוקח את 5 הידיעות האחרונות
+        for entry in feed.entries[:5]:
+            title = entry.title
+            link = entry.link
+            # ניקוי התקציר מ-HTML
+            description = clean_html(entry.get('description', ''))
+            # חיתוך התקציר אם הוא ארוך מדי
+            short_desc = (description[:120] + '...') if len(description) > 120 else description
+            
+            response += f"📌 **{title}**\n{short_desc}\n[לכתבה המלאה]({link})\n\n"
+
+        # שליחת התוצאה הסופית במקום הודעת הסטטוס
+        await status_msg.delete()
+        await update.message.reply_text(response, parse_mode='Markdown', disable_web_page_preview=False)
+
+    except Exception as e:
+        logging.error(f"Error: {e}")
+        await status_msg.edit_text("חלה שגיאה במשיכת הנתונים. נסה שוב מאוחר יותר.")
+
+if __name__ == '__main__':
+    # יצירת האפליקציה
+    app = Application.builder().token(TOKEN).build()
+    
+    # הוספת מטפלים (Handlers)
+    app.add_handler(CommandHandler("start", start))
+    
+    # זה המאזין הקריטי - הוא מחכה ללחיצה ב-HTML
+    app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, handle_webapp_data))
+    
+    print("הבוט רץ...")
+    app.run_polling()
