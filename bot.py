@@ -1,17 +1,17 @@
 import logging
 import feedparser
-from telegram import Update, WebAppInfo, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
+from bs4 import BeautifulSoup
+from telegram import Update, WebAppInfo, KeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
-# הגדרות לוגים כדי שנראה אם יש שגיאות
+# הגדרת לוגים לבדיקת תקלות ב-Render
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
-# --- הגדרות ---
-TOKEN = "כאן_שמים_את_הטוקן_מבאטפאדר"
-# הלינק של ה-GitHub Pages שלך
-WEB_APP_URL = "https://your-username.github.io/your-repo-name/" 
+# --- שנה כאן את הפרטים שלך ---
+TOKEN = "כאן_הטוקן_שלך_מבאטפאדר"
+WEB_APP_URL = "https://your-username.github.io/your-repo/" 
 
-# מפות של לינקים ל-RSS (דוגמאות)
+# מקורות RSS (מעריב)
 RSS_FEEDS = {
     "חדשות": "https://www.maariv.co.il/rss/rsschadashot",
     "כלכלה": "https://www.maariv.co.il/rss/rssfeedsasakim",
@@ -19,42 +19,49 @@ RSS_FEEDS = {
     "תרבות": "https://www.maariv.co.il/rss/rssfeedstarbot"
 }
 
-# פונקציית התחלה
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    keyboard = [
-        [InlineKeyboardButton("פתח אפליקציית חדשות", web_app=WebAppInfo(url=WEB_APP_URL))]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await update.message.reply_text("ברוכים הבאים לבוט החדשות! לחץ על הכפתור למטה כדי לבחור קטגוריה:", reply_markup=reply_markup)
+def clean_html(html_text):
+    if not html_text: return ""
+    return BeautifulSoup(html_text, "html.parser").get_text()
 
-# פונקציה שמקבלת את הבחירה מהאפליקציה (ה-index.html)
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # יצירת כפתור מקלדת - חובה באייפון כדי ש-sendData יעבוד
+    web_app = WebAppInfo(url=WEB_APP_URL)
+    kb = [[KeyboardButton("📰 בחר קטגוריית חדשות", web_app=web_app)]]
+    reply_markup = ReplyKeyboardMarkup(kb, resize_keyboard=True)
+    
+    await update.message.reply_text(
+        "ברוך הבא! לחץ על הכפתור למטה כדי לפתוח את תפריט החדשות:",
+        reply_markup=reply_markup
+    )
+
 async def handle_webapp_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # הנתון שנשלח מה-HTML (למשל "ספורט")
     category = update.effective_message.web_app_data.data
     feed_url = RSS_FEEDS.get(category)
     
-    if feed_url:
-        await update.message.reply_text(f"מושך עבורך את עדכוני {category} האחרונים...")
-        feed = feedparser.parse(feed_url)
-        
-        # בניית הודעת התקציר (5 ידיעות אחרונות)
-        summary = f"📢 **עדכוני {category} מהשעה האחרונה:**\n\n"
-        for entry in feed.entries[:5]:
-            summary += f"🔹 [{entry.title}]({entry.link})\n\n"
-        
-        await update.message.reply_text(summary, parse_mode='Markdown', disable_web_page_preview=False)
-    else:
-        await update.message.reply_text(f"קיבלתי את הבחירה '{category}', אך לא מצאתי מקור חדשות מתאים.")
+    if not feed_url:
+        await update.message.reply_text("קטגוריה לא נמצאה.")
+        return
 
-def main():
-    app = Application.builder().token(TOKEN).build()
-    
-    app.add_handler(CommandHandler("start", start))
-    # מאזין לנתונים שמגיעים מה-Web App
-    app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, handle_webapp_data))
-    
-    print("הבוט רץ ומחכה לפקודות...")
-    app.run_polling()
+    status_msg = await update.message.reply_text(f"מושך חדשות בנושא {category}... ⏳")
+
+    try:
+        feed = feedparser.parse(feed_url)
+        response = f"🗞️ **תקציר חדשות: {category}**\n\n"
+
+        for entry in feed.entries[:5]:
+            title = entry.title
+            link = entry.link
+            desc = clean_html(entry.get('description', ''))
+            short_desc = (desc[:100] + '...') if len(desc) > 100 else desc
+            response += f"📌 **{title}**\n{short_desc}\n[לכתבה המלאה]({link})\n\n"
+
+        await status_msg.delete()
+        await update.message.reply_text(response, parse_mode='Markdown', disable_web_page_preview=False)
+    except Exception as e:
+        await status_msg.edit_text("חלה שגיאה במשיכת הנתונים.")
 
 if __name__ == '__main__':
-    main()
+    app = Application.builder().token(TOKEN).build()
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, handle_webapp_data))
+    app.run_polling()
