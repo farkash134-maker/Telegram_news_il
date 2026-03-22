@@ -2,39 +2,35 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>חדשות ישראל</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body { 
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
-            text-align: center; padding: 20px; margin: 0;
+            font-family: -apple-system, sans-serif; 
+            text-align: center; padding: 20px; 
             background-color: var(--tg-theme-bg-color, #ffffff); 
             color: var(--tg-theme-text-color, #000000);
-            user-select: none; -webkit-user-select: none;
         }
-        .header { margin-bottom: 25px; }
-        .container { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 400px; margin: 0 auto; }
+        .container { display: flex; flex-direction: column; gap: 15px; margin-top: 20px; }
         button { 
-            width: 100%; padding: 18px; font-size: 18px; font-weight: 600;
-            cursor: pointer; background-color: var(--tg-theme-button-color, #248bed); 
-            color: var(--tg-theme-button-text-color, #ffffff); border: none; border-radius: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1); -webkit-tap-highlight-color: transparent;
+            width: 100%; padding: 18px; font-size: 18px; font-weight: bold;
+            background-color: var(--tg-theme-button-color, #248bed); 
+            color: var(--tg-theme-button-text-color, #ffffff); 
+            border: none; border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            -webkit-tap-highlight-color: transparent;
         }
-        button:active { transform: scale(0.97); opacity: 0.8; }
+        button:active { opacity: 0.8; transform: scale(0.98); }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>חדשות ישראל</h1>
-        <p>בחר קטגוריה לקבלת תקציר:</p>
-    </div>
-
+    <h2>בחר קטגוריה לקבלת תקציר:</h2>
     <div class="container">
-        <button onclick="sendCat('חדשות')">📰 חדשות כללי</button>
-        <button onclick="sendCat('כלכלה')">💰 כלכלה ועסקים</button>
-        <button onclick="sendCat('ספורט')">⚽ ספורט</button>
-        <button onclick="sendCat('תרבות')">🎭 תרבות ובידור</button>
+        <button onclick="selectCategory('חדשות')">📰 חדשות כללי</button>
+        <button onclick="selectCategory('כלכלה')">💰 כלכלה ועסקים</button>
+        <button onclick="selectCategory('ספורט')">⚽ ספורט</button>
+        <button onclick="selectCategory('תרבות')">🎭 תרבות ובידור</button>
     </div>
 
     <script>
@@ -42,14 +38,10 @@
         tg.ready();
         tg.expand();
 
-        function sendCat(name) {
-            // הדרך היחידה להחזיר נתון לבוט באייפון:
-            try {
-                tg.sendData(name);
-                // האפליקציה תיסגר אוטומטית ברגע שהנתון יישלח
-            } catch (e) {
-                alert("שגיאה: וודא שפתחת את האפליקציה דרך כפתור המקלדת בבוט.");
-            }
+        function selectCategory(name) {
+            // שליחת הנתון לבוט וסגירה מיידית של האפליקציה
+            tg.sendData(name);
+            tg.close();
         }
     </script>
 </body>
