@@ -4,123 +4,52 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>חדשות ישראל</title>
-    
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    
     <style>
-        :root {
-            --tg-theme-bg-color: #ffffff;
-            --tg-theme-text-color: #000000;
-            --tg-theme-button-color: #248bed;
-            --tg-theme-button-text-color: #ffffff;
-        }
-
         body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-            text-align: center; 
-            padding: 20px; 
-            margin: 0;
-            background-color: var(--tg-theme-bg-color); 
-            color: var(--tg-theme-text-color);
-            /* מונע בחירת טקסט בטעות בזמן לחיצה מהירה */
-            user-select: none;
-            -webkit-user-select: none;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
+            text-align: center; padding: 20px; margin: 0;
+            background-color: var(--tg-theme-bg-color, #ffffff); 
+            color: var(--tg-theme-text-color, #000000);
+            user-select: none; -webkit-user-select: none;
         }
-
-        .header { margin-top: 10px; margin-bottom: 25px; }
-        .header h1 { font-size: 22px; margin-bottom: 8px; }
-        .header p { font-size: 15px; opacity: 0.8; }
-
-        .container { 
-            display: flex; 
-            flex-direction: column; 
-            gap: 12px; 
-            width: 100%; 
-            max-width: 400px; 
-            margin: 0 auto; 
-        }
-
+        .header { margin-bottom: 25px; }
+        .container { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 400px; margin: 0 auto; }
         button { 
-            width: 100%; 
-            padding: 16px; 
-            font-size: 18px; 
-            font-weight: 600;
-            cursor: pointer; 
-            background-color: var(--tg-theme-button-color); 
-            color: var(--tg-theme-button-text-color); 
-            border: none; 
-            border-radius: 12px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            /* הגדרה חשובה לאייפון למנוע הבהוב אפור בלחיצה */
-            -webkit-tap-highlight-color: transparent;
-            transition: transform 0.1s ease, opacity 0.1s ease;
+            width: 100%; padding: 18px; font-size: 18px; font-weight: 600;
+            cursor: pointer; background-color: var(--tg-theme-button-color, #248bed); 
+            color: var(--tg-theme-button-text-color, #ffffff); border: none; border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); -webkit-tap-highlight-color: transparent;
         }
-
-        /* אפקט לחיצה שמרגיש כמו אפליקציה אמיתית */
-        button:active { 
-            transform: scale(0.97); 
-            opacity: 0.9; 
-        }
-
-        .footer {
-            margin-top: 40px;
-            font-size: 11px;
-            opacity: 0.5;
-        }
+        button:active { transform: scale(0.97); opacity: 0.8; }
     </style>
 </head>
 <body>
-
     <div class="header">
-        <h1 id="user-greeting">שלום!</h1>
-        <p>בחר קטגוריה לקבלת תקציר חדשות:</p>
+        <h1>חדשות ישראל</h1>
+        <p>בחר קטגוריה לקבלת תקציר:</p>
     </div>
 
     <div class="container">
-        <button onclick="sendCategory('חדשות')">📰 חדשות כללי</button>
-        <button onclick="sendCategory('כלכלה')">💰 כלכלה ועסקים</button>
-        <button onclick="sendCategory('ספורט')">⚽ ספורט</button>
-        <button onclick="sendCategory('תרבות')">🎭 תרבות ובידור</button>
-    </div>
-
-    <div class="footer">
-        המידע נמשך מאתרי החדשות המובילים בישראל
+        <button onclick="sendCat('חדשות')">📰 חדשות כללי</button>
+        <button onclick="sendCat('כלכלה')">💰 כלכלה ועסקים</button>
+        <button onclick="sendCat('ספורט')">⚽ ספורט</button>
+        <button onclick="sendCat('תרבות')">🎭 תרבות ובידור</button>
     </div>
 
     <script>
-        // אתחול מול טלגרם
         const tg = window.Telegram.WebApp;
-        
-        // מודיע לטלגרם שהדף מוכן
         tg.ready();
-        // פותח למסך מלא
         tg.expand();
 
-        // הצגת שם המשתמש מטלגרם
-        if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-            document.getElementById('user-greeting').innerText = `שלום, ${tg.initDataUnsafe.user.first_name}!`;
-        }
-
-        function sendCategory(categoryName) {
-            // רטט קטן באייפון (Haptic Feedback) אם נתמך - נותן תחושה של אפליקציה
-            if (tg.HapticFeedback) {
-                tg.HapticFeedback.impactOccurred('medium');
-            }
-
-            // הפקודה ששולחת את הנתונים וסוגרת את ה-Web App
-            // הנתון נשלח כטקסט פשוט ל-MessageHandler של הבוט
+        function sendCat(name) {
+            // הדרך היחידה להחזיר נתון לבוט באייפון:
             try {
-                tg.sendData(categoryName);
-            } catch (err) {
-                console.error("Error sending data:", err);
-                alert("חלה שגיאה בחיבור לבוט. וודא שפתחת את האפליקציה דרך כפתור המקלדת.");
+                tg.sendData(name);
+                // האפליקציה תיסגר אוטומטית ברגע שהנתון יישלח
+            } catch (e) {
+                alert("שגיאה: וודא שפתחת את האפליקציה דרך כפתור המקלדת בבוט.");
             }
-        }
-
-        // התאמת צבעים אוטומטית למצב לילה/יום של הטלגרם
-        if (tg.themeParams.bg_color) {
-            document.body.style.backgroundColor = tg.themeParams.bg_color;
-            document.body.style.color = tg.themeParams.text_color;
         }
     </script>
 </body>
