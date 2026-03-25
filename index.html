@@ -3,45 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>חדשות ישראל</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { 
-            font-family: -apple-system, sans-serif; 
-            text-align: center; padding: 20px; 
-            background-color: var(--tg-theme-bg-color, #ffffff); 
-            color: var(--tg-theme-text-color, #000000);
+        body { font-family: sans-serif; text-align: center; padding: 20px; background: #f0f2f5; }
+        .btn { 
+            width: 100%; padding: 20px; margin: 10px 0; font-size: 18px; font-weight: bold;
+            background: #0088cc; color: white; border: none; border-radius: 15px;
         }
-        .container { display: flex; flex-direction: column; gap: 15px; margin-top: 20px; }
-        button { 
-            width: 100%; padding: 18px; font-size: 18px; font-weight: bold;
-            background-color: var(--tg-theme-button-color, #248bed); 
-            color: var(--tg-theme-button-text-color, #ffffff); 
-            border: none; border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            -webkit-tap-highlight-color: transparent;
-        }
-        button:active { opacity: 0.8; transform: scale(0.98); }
     </style>
 </head>
 <body>
-    <h2>בחר קטגוריה לקבלת תקציר:</h2>
-    <div class="container">
-        <button onclick="selectCategory('חדשות')">📰 חדשות כללי</button>
-        <button onclick="selectCategory('כלכלה')">💰 כלכלה ועסקים</button>
-        <button onclick="selectCategory('ספורט')">⚽ ספורט</button>
-        <button onclick="selectCategory('תרבות')">🎭 תרבות ובידור</button>
-    </div>
+    <h3>בחר נושא לחדשות:</h3>
+    <button class="btn" onclick="send('חדשות')">📰 חדשות</button>
+    <button class="btn" onclick="send('כלכלה')">💰 כלכלה</button>
+    <button class="btn" onclick="send('ספורט')">⚽ ספורט</button>
+    <button class="btn" onclick="send('תרבות')">🎭 תרבות</button>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.ready();
-        tg.expand();
-
-        function selectCategory(name) {
-            // שליחת הנתון לבוט וסגירה מיידית של האפליקציה
-            tg.sendData(name);
-            tg.close();
+        function send(cat) {
+            tg.sendData(cat); // שליחת המילה לבוט
+            tg.close();       // סגירה מיידית
         }
     </script>
 </body>
